@@ -54,3 +54,27 @@ if not (baselineList==itemList): #differences found. Either added or removed ite
 
     sendslack.slack_webhook("Kobo Update", message)
 
+
+
+# products = soup.find_all('div', "productitem-ereader--info")
+
+# productList= []
+
+# for p in products:
+#     basicinfo = (p.find('h2', class_="product-title").text.strip(), p.find(class_="money").text.strip(), urlprefix+p.find('a')['href'])
+#     featureList = []
+#     for feature in p.find_all('li', class_="productitem--feature"):
+#         featureList.append(feature.text.strip())
+#     featureinfo = tuple(featureList)
+#     productList.append(basicinfo+featureinfo)
+
+# f = open('pbaseline.txt', 'w')
+# for p in productList:
+#     for each in p:
+#         f.write(each+'\t')
+#     f.write('\n')
+# f.close()
+
+
+    
+
