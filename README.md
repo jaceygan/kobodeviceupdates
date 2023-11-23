@@ -1,4 +1,7 @@
 # kobodeviceupdates
-Scrap Rakuten Kobo eReader page to see if new device is added or removed
+Scrape Kobo to check:
+1. Device added
+2. Device removed
+3. Price changes
 
-sends notification through slack webhook
+Sends notification through slack webhook

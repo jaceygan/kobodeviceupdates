@@ -8,6 +8,13 @@ url = "https://sg.kobobooks.com/collections/ereaders"
 soup = BeautifulSoup(requests.get(url).content, 'lxml')
 urlprefix = "https://sg.kobobooks.com"
 
+def writeItemsToFile(filename, productList):
+    f = open(filename, 'w')
+    for item in productList:
+        f.write(item.printDevice())
+    f.close()
+
+
 #scrape URL to get all current products
 products = soup.find_all('div', "productitem-ereader--info")
 productList= []
@@ -25,11 +32,9 @@ for p in products:
 productList.sort()
 
 bfile = 'pbaseline.txt'
-if not (os.path.isfile(bfile)): #file not found means first time running. so generate baseline from current list
-    f = open(bfile, 'w')
-    for p in productList:
-        f.write(p.printDevice())
-    f.close()
+if not (os.path.isfile(bfile)): 
+    #file not found means first time running. so generate baseline from current list
+    writeItemsToFile(bfile, productList)
 
 # get baseline list from file
 baselineList = []
@@ -61,11 +66,8 @@ if (baselineList != productList):
     message += '\nCheck out at '+url
 
     sendslack.slack_webhook("Kobo Device Lineup Changes", message)
-    #write new info to baseline file
-    f = open(bfile, 'w')
-    for item in productList:
-        f.write(item.printDevice())
-    f.close()
+
+    writeItemsToFile(bfile, productList)
 
 #check for price changes and inform if found
 changesfound = 0
@@ -83,12 +85,4 @@ for p in productList:
             sendslack.slack_webhook("Price changed for "+str(p), m)
 
 if changesfound>0:
-    f = open(bfile, 'w')
-    for item in productList:
-        f.write(item.printDevice())
-    f.close()
-
-
-
-    
-
+    writeItemsToFile(bfile, productList)
