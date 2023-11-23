@@ -2,78 +2,92 @@ from bs4 import BeautifulSoup
 import requests
 import os.path
 import sendslack
+from device import device
 
 url = "https://sg.kobobooks.com/collections/ereaders"
+soup = BeautifulSoup(requests.get(url).content, 'lxml')
 urlprefix = "https://sg.kobobooks.com"
 
-soup = BeautifulSoup(requests.get(url).content, 'lxml')
-items = soup.find_all('h2', class_="product-title")
+#scrape URL to get all current products
+products = soup.find_all('div', "productitem-ereader--info")
+productList= []
+for p in products:
+    featureList = ''
+    for feature in p.find_all('li', class_="productitem--feature"):
+        featureList+=feature.text.strip()+'\t'
+    featureList = featureList[:-1] #remove last tab
 
-itemList = []
+    d = device(p.find('h2', class_="product-title").text.strip(), p.find(class_="money").text.strip(),
+                urlprefix+p.find('a')['href'], featureList)
 
-for item in items:
-    itemList.append(item.text.strip())
+    productList.append(d)
 
-itemList.sort()
+productList.sort()
 
-#if baseline file not found, write current items to file
-basefile = "baseline.txt"
-if not (os.path.isfile(basefile)):
-    f = open(basefile, 'w')
-    for item in itemList:
-        f.write(item+'\n')
-        #print(urlprefix+item.find('a')['href'])
+bfile = 'pbaseline.txt'
+if not (os.path.isfile(bfile)): #file not found means first time running. so generate baseline from current list
+    f = open(bfile, 'w')
+    for p in productList:
+        f.write(p.printDevice())
     f.close()
 
+# get baseline list from file
 baselineList = []
-f = open(basefile, 'r')
+f = open(bfile, 'r')
 for line in f:
     if line:
-        baselineList.append(line.rstrip())
+        dlist = line.split('\t', 3)
+        d = device(dlist[0], dlist[1], dlist[2], dlist[3])
+        baselineList.append(d)
 f.close()
+
 baselineList.sort()
 
-if not (baselineList==itemList): #differences found. Either added or removed items
+# check for added/remove devices and inform if found
+#TODO: to notify for individual device addtion/ removal
+#TODO: Add logging everywhere
+if (baselineList != productList):
     message = ''
-    message += 'Removed devices:\n\n'
+    message += 'Removed devices:\n'
     for r in baselineList:
-        if r not in itemList:
-            message+='\t'+r+'\n'
+        if r not in productList:
+            message+='\t'+str(r)+'\n'
 
-    message += '\nAdded devices:\n\n'
-    for a in itemList:
+    message += '\nAdded devices:\n'
+    for a in productList:
         if a not in baselineList:
-            message+= '\t'+a+'\n'
+            message+= '\t'+str(a)+'\n'
     
-    message += '\nCheck out at '+url+'\n'
-    
-    f = open(basefile, 'w')
-    for item in itemList:
-        f.write(item+'\n')
+    message += '\nCheck out at '+url
+
+    sendslack.slack_webhook("Kobo Device Lineup Changes", message)
+    #write new info to baseline file
+    f = open(bfile, 'w')
+    for item in productList:
+        f.write(item.printDevice())
     f.close()
 
-    sendslack.slack_webhook("Kobo Update", message)
+#check for price changes and inform if found
+changesfound = 0
+for p in productList:
+    if p in baselineList:
+        bindex = baselineList.index(p)
+        op = baselineList[bindex]
+        if p.priceChanged(op):
+            changesfound +=1
+            m = ''
+            m+= "Previous Price: "+op.price+'\n'
+            m+= "New Price: " +p.price+'\n'
+            m+= "Check it out at " + p.url
 
+            sendslack.slack_webhook("Price changed for "+str(p), m)
 
+if changesfound>0:
+    f = open(bfile, 'w')
+    for item in productList:
+        f.write(item.printDevice())
+    f.close()
 
-# products = soup.find_all('div', "productitem-ereader--info")
-
-# productList= []
-
-# for p in products:
-#     basicinfo = (p.find('h2', class_="product-title").text.strip(), p.find(class_="money").text.strip(), urlprefix+p.find('a')['href'])
-#     featureList = []
-#     for feature in p.find_all('li', class_="productitem--feature"):
-#         featureList.append(feature.text.strip())
-#     featureinfo = tuple(featureList)
-#     productList.append(basicinfo+featureinfo)
-
-# f = open('pbaseline.txt', 'w')
-# for p in productList:
-#     for each in p:
-#         f.write(each+'\t')
-#     f.write('\n')
-# f.close()
 
 
     
