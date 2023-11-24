@@ -68,9 +68,11 @@ if (baselineList != productList):
     logging.info('Differences found between product and baseline')
     for r in baselineList:
         if r not in productList:
+            logging.info(f'Building slack message for {str(r)} removal')
             message = 'Price was: ' + r.price + '\n'
             message+= 'Device url: '+ r.url + '\n'
             message+= '\nCheck out at '+url
+
 
             if sendslack.slack_webhook(str(r) + " Removed", message) == 200:
                 logging.info('Device removal message sent to slack')
@@ -78,6 +80,7 @@ if (baselineList != productList):
     
     for a in productList:
         if a not in baselineList:
+            logging.info(f'Building slack message for {str(r)} addition')
             message = 'Price: ' + a.price + '\n'
             message+= 'Features:'+ '\n'
             for f in a.features.split('\t'):
