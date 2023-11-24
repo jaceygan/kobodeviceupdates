@@ -1,5 +1,7 @@
 import json
 import requests
+import logging
+
 
 def slack_notification_content(title= 'Test title', message='Test message'):
      
@@ -35,10 +37,5 @@ def slack_webhook(title, message):
         data=json.dumps(slack_data),
         headers=headers
     )
-
-    '''
-    if response.status_code == 200:
-        print("Notification Sent....")
-    '''
-
-
+    
+    return response.status_code
